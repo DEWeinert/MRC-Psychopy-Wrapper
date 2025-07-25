@@ -225,7 +225,8 @@ class MRCEyeTracking:
         print(f"MRC Eye Tracker Version: {version}")
     def calibrate(self, win, calibration_points = int(9),screen_width = float(1920),screen_height = float(1080),distance_to_screen = float(130), pixel_size = float(0.333),dot_color = [1,1,1], dot_size = float(20)):
         #Please set screen_width and height as well as distance to screen and pixel size
-        #Calibration is made for a quadratic window equal to the full height of the screen and positioned in the center of the screen. Adjust vertical_goesse and x_displace if nessecary for a not quadratic fixation
+        #Calibrations standard values are set to put the settings for a quadratic window equal to the full height of the screen and positioned in the center of the screen. Adjust vertical_groesse and x_displace if nessecary
+        #to adjust the presentation windows size.
         if self.eye_get_status()!= -1:
             self.win = win
             screen_width = float(screen_width)
