@@ -243,10 +243,16 @@ class MRCEyeTracking:
         print(f"MRC Eye Tracker Version: {version}")
         
     
-    def calibrate(self, win, calibration_points = int(9),screen_width = int(1920),screen_height = int(1080),distance_to_screen = int(130), pixel_size = float(0.333),dot_color = [1,1,1], dot_size = float(20)):
+    def calibrate(self, win, calibration_points = int(9),screen_width = int(1920),screen_height = int(1080),distance_to_screen = int(130), pixel_size = float(0.333),dot_color = [1,1,1], dot_size = float(20), flipped = True):
         #Please set screen_width and height as well as distance to screen and pixel size
         #Calibration is made for a quadratic window equal to the full height of the screen and positioned in the center of the screen. Adjust vertical_goesse and x_displace if nessecary for a not quadratic fixation
-        if self.eye_get_status()!= -1:
+        if self.eye_get_status()!= -1:             
+            repeat_Text = visual.TextStim(win=win, name='introText', text='Calibration Completed \n    To recalibrate press 5 \n To continue press SPACE', 
+                        font='Arial', pos=[0, 0], height=3, wrapWidth=30, ori=0, color='white', colorSpace='rgb', opacity=1, languageStyle='LTR', flipHoriz=flipped, depth=-1.0);
+            calibration_Text = visual.TextStim(win=win, name='introText', text='Eyetracker Calibration \n    Focus your sight onto the white dots \n To start press  SPACE \n To abort at any time press Q', 
+                        font='Arial', pos=[0, 0], height=3, wrapWidth=30, ori=0, color='white', colorSpace='rgb', opacity=1, languageStyle='LTR', flipHoriz=flipped, depth=-1.0);
+            calibration = True
+            repeat_calibration = False
             self.win = win
             screen_width = int(screen_width)
             screen_height = int(screen_height)
@@ -259,32 +265,67 @@ class MRCEyeTracking:
             self.eye_set_display_parameter(vertical_groesse, tracking_groesse, distance_to_screen, pixel_size)  # width, height, distance, pixel size
             self.eye_set_display_offset(x_displace, y_displace) #this variable places the presentation window of the software and defines the area in which recording takes place
             print(x_displace,y_displace)
-            calibration_running = False
-            print(self.eye_get_status())
             if self.eye_get_status() != 2:
-                self.eye_start_stream(0)
-                self.eye_start_calibrate(calibration_points)
-                calibration_running = True
-
-            point = [0,0,0]
+                calibration_message = True
             self.MRC_keyboard.clearEvents()
-
-            while calibration_running == True:
+            while calibration_message
                 cancel_key = self.MRC_keyboard.getKeys(keyList = ["q","escape"], waitRelease = False)
+                continue_key = self.MRC_keyboard.getKeys(keyList = ["space"], waitRelease = False)
                 if cancel_key: 
-                    print("Calibration aborted")
-                    self.eye_stop_calibration()
-                    self.eye_stop_stream()
+                    calibration = False
+                    calibration_message = False
                     break
-                if self.eye_get_status() == 2:
-                    print("calibration done")
-                    self.eye_stop_calibration()
-                    calibration_running = False
-                    self.eye_stop_stream()
-                point = self.eye_get_calibration_point()
-                stimulus = visual.Circle(win=win, radius=dot_size / 2, fillColor=dot_color, lineColor=dot_color, pos=(point[1]-tracking_groesse/2, tracking_groesse/2-point[2]))
-                stimulus.draw()
+                if continue_key:
+                    print("starting calibration")
+                    calibration_message = False
+                calibration_Text.draw()
                 win.flip()
+            while calibration:
+                calibration_running = False
+                print(self.eye_get_status())
+                if self.eye_get_status() != 2 or repeat_calibration:
+                    self.eye_start_stream(0)
+                    self.eye_start_calibrate(calibration_points)
+                    calibration_running = True
+                    repeat_calibration = False
+
+                point = [0,0,0]
+                self.MRC_keyboard.clearEvents()
+
+                while calibration_running == True:
+                    cancel_key = self.MRC_keyboard.getKeys(keyList = ["q","escape"], waitRelease = False)
+                    if cancel_key: 
+                        print("Calibration aborted")
+                        self.eye_stop_calibration()
+                        self.eye_stop_stream()
+                        calibration = False
+                        break
+                    if self.eye_get_status() == 2:
+                        print("calibration done")
+                        self.eye_stop_calibration()
+                        calibration_running = False
+                        self.eye_stop_stream()
+                    point = self.eye_get_calibration_point()
+                    stimulus = visual.Circle(win=win, radius=dot_size / 2, fillColor=dot_color, lineColor=dot_color, pos=(point[1]-tracking_groesse/2, tracking_groesse/2-point[2]))
+                    stimulus.draw()
+                    win.flip()
+                if self.eye_get_status() == 2:
+                    self.MRC_keyboard.clearEvents()
+                    repeat_message = True
+                    while repeat_message and not repeat_calibration:
+                        cancel_key = self.MRC_keyboard.getKeys(keyList = ["q","escape", "space"], waitRelease = False)
+                        repeat_key = self.MRC_keyboard.getKeys(keyList = ["5"], waitRelease = False)
+                        if cancel_key: 
+                            self.eye_stop_calibration()
+                            self.eye_stop_stream()
+                            calibration = False
+                            repeat_message = False
+                            break
+                        if repeat_key:
+                            print("repeating calibration")
+                            repeat_calibration = True
+                        repeat_Text.draw()
+                        win.flip()                                      
         else:
             print("error. Eyetracker not connected?")
     def start_recording(self):
